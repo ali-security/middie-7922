@@ -8,14 +8,13 @@ import { expect } from 'tstyche'
 const app = fastify()
 app.register(middiePlugin)
 
-expect({}).type.toBeAssignableTo<FastifyMiddieOptions>()
+expect<FastifyMiddieOptions>().type.toBeAssignableFrom({})
+expect<IncomingMessageExtended>().type.toBeAssignableFrom({ body: { foo: 'bar' }, query: { bar: 'foo' } })
+expect<IncomingMessageExtended>().type.toBeAssignableFrom({})
 
-expect({ body: { foo: 'bar' }, query: { bar: 'foo' } }).type.toBeAssignableTo<IncomingMessageExtended>()
-expect({}).type.toBeAssignableTo<IncomingMessageExtended>()
-
-app.use('/', (_req, _res, next) => {
-  expect<any>().type.toBeAssignableTo<IncomingMessageExtended['body']>()
-  expect<any>().type.toBeAssignableTo<IncomingMessageExtended['query']>()
+app.use('/', (req, _res, next) => {
+  expect(req.body).type.toBe<any>()
+  expect(req.query).type.toBe<any>()
   next()
 })
 
