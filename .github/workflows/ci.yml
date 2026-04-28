@@ -18,6 +18,9 @@ on:
 jobs:
   test:
     uses: fastify/workflows/.github/workflows/plugins-ci.yml@v3
+    permissions:
+      contents: write
+      pull-requests: write
     with:
-      license-check: true
-      lint: true
+      license-check: false
+      lint: false

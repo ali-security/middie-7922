@@ -24,11 +24,23 @@ const supportedHooksWithoutPayload = [
 
 const supportedHooks = [...supportedHooksWithPayload, ...supportedHooksWithoutPayload]
 
+function resolveNormalizationOptions (instance) {
+  const initialConfig = instance.initialConfig || {}
+  const routerOptions = initialConfig.routerOptions || {}
+
+  return {
+    ignoreDuplicateSlashes: routerOptions.ignoreDuplicateSlashes != null ? routerOptions.ignoreDuplicateSlashes : initialConfig.ignoreDuplicateSlashes,
+    useSemicolonDelimiter: routerOptions.useSemicolonDelimiter != null ? routerOptions.useSemicolonDelimiter : initialConfig.useSemicolonDelimiter,
+    ignoreTrailingSlash: routerOptions.ignoreTrailingSlash != null ? routerOptions.ignoreTrailingSlash : initialConfig.ignoreTrailingSlash
+  }
+}
+
 function fastifyMiddie (fastify, options, next) {
   fastify.decorate('use', use)
   fastify[kMiddlewares] = []
   fastify[kMiddieHasMiddlewares] = false
-  fastify[kMiddie] = Middie(onMiddieEnd)
+
+  fastify[kMiddie] = Middie(onMiddieEnd, resolveNormalizationOptions(fastify))
 
   const hook = options.hook || 'onRequest'
 
@@ -87,11 +99,17 @@ function fastifyMiddie (fastify, options, next) {
   function onRegister (instance) {
     const middlewares = instance[kMiddlewares].slice()
     instance[kMiddlewares] = []
-    instance[kMiddie] = Middie(onMiddieEnd)
+    instance[kMiddie] = Middie(onMiddieEnd, resolveNormalizationOptions(instance))
     instance[kMiddieHasMiddlewares] = false
     instance.decorate('use', use)
-    for (const middleware of middlewares) {
-      instance.use(...middleware)
+    for (const [path, fn] of middlewares) {
+      instance[kMiddlewares].push([path, fn])
+      if (fn == null) {
+        instance[kMiddie].use(path)
+      } else {
+        instance[kMiddie].use(path, fn)
+      }
+      instance[kMiddieHasMiddlewares] = true
     }
   }
 
